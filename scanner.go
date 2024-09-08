@@ -103,20 +103,28 @@ func scanText(s *Scanner) stateFn {
 	case '*':
 		s.emit(T_STAR)
 	case '!':
-		return scanBang
+		return scanPair('=', T_BANG_EQUAL, T_BANG)
+	case '=':
+		return scanPair('=', T_EQUAL_EQUAL, T_EQUAL)
+	case '<':
+		return scanPair('=', T_LESS_EQUAL, T_LESS)
+	case '>':
+		return scanPair('=', T_GREATER_EQUAL, T_GREATER)
 	default:
 		s.emitError("Unexpected character.")
 	}
 	return scanText
 }
 
-func scanBang(s *Scanner) stateFn {
-	if s.match('=') {
-		s.emit(T_BANG_EQUAL)
-	} else {
-		s.emit(T_BANG)
+func scanPair(second byte, double TokenKind, single TokenKind) stateFn {
+	return func(s *Scanner) stateFn {
+		if s.match(second) {
+			s.emit(double)
+		} else {
+			s.emit(single)
+		}
+		return scanText
 	}
-	return scanText
 }
 
 func (s *Scanner) nextToken() Token {
