@@ -7,7 +7,7 @@ import (
 
 func TestScanner(t *testing.T) {
 
-	source := "(*!=)"
+	source := "(*!=*!"
 	line := -1
 	s := scan([]byte(source))
 
