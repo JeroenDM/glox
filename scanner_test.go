@@ -9,10 +9,9 @@ func TestScanner(t *testing.T) {
 
 	source := "(*!=*!<==>===="
 	line := -1
-	s := scan([]byte(source))
+	_, tokens := scan([]byte(source))
 
-	for {
-		token := s.nextToken()
+	for token := range tokens {
 		if token.line != line {
 			fmt.Printf("%4d ", token.line)
 		} else {

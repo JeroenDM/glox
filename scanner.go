@@ -74,32 +74,51 @@ type Scanner struct {
 	tokens  chan Token
 }
 
-// func (s *Scanner) run() {
-// 	for state := scanText; state != nil; {
-// 		state = state(s)
-// 	}
-// 	close(s.tokens) // No more tokens will be delivered
+func (s *Scanner) run() {
+	for state := scanTopLevel; state != nil; {
+		state = state(s)
+	}
+	close(s.tokens) // No more tokens will be delivered
 
-// }
+}
 
-func scan(source []byte) *Scanner {
+func scan(source []byte) (*Scanner, chan Token) {
 	s := &Scanner{
 		line:   1,
 		source: source,
-		tokens: make(chan Token, 2), // TODO: is 2 this enough for the Lox grammar?
+		tokens: make(chan Token), // TODO: is 2 this enough for the Lox grammar?
 	}
-	return s
+	go s.run()
+	return s, s.tokens
 }
 
-func scanText(s *Scanner) stateFn {
+func scanTopLevel(s *Scanner) stateFn {
 	if s.isAtEnd() {
 		return nil
 	}
-	// s.emit(T_EOF)
+
 	c := s.advance()
 	switch c {
 	case '(':
 		s.emit(T_LEFT_PAREN)
+	case ')':
+		s.emit(T_RIGHT_PAREN)
+	case '{':
+		s.emit(T_LEFT_BRACE)
+	case '}':
+		s.emit(T_RIGHT_BRACE)
+	case ';':
+		s.emit(T_SEMICOLON)
+	case ',':
+		s.emit(T_COMMA)
+	case '.':
+		s.emit(T_DOT)
+	case '-':
+		s.emit(T_MINUS)
+	case '+':
+		s.emit(T_PLUS)
+	case '/':
+		s.emit(T_SLASH)
 	case '*':
 		s.emit(T_STAR)
 	case '!':
@@ -113,7 +132,7 @@ func scanText(s *Scanner) stateFn {
 	default:
 		s.emitError("Unexpected character.")
 	}
-	return scanText
+	return scanTopLevel
 }
 
 func scanPair(second byte, double TokenKind, single TokenKind) stateFn {
@@ -123,84 +142,8 @@ func scanPair(second byte, double TokenKind, single TokenKind) stateFn {
 		} else {
 			s.emit(single)
 		}
-		return scanText
+		return scanTopLevel
 	}
-}
-
-func (s *Scanner) nextToken() Token {
-	// -- talk version --
-	// TODO: this is different in the slide but does not work,
-	// it tries to invoke the call operator on the nil state.
-	s.state = scanText
-	for s.state != nil {
-		select {
-		case item := <-s.tokens:
-			return item
-		default:
-			s.state = s.state(s)
-		}
-	}
-	// TODO what to do here?
-	return s.makeToken(T_EOF)
-	// -- end talk version --
-
-	// -- book version --
-	// s.start = s.current
-
-	// if s.isAtEnd() {
-	// 	return s.makeToken(T_EOF)
-	// }
-	// c := s.advance()
-	// switch c {
-	// case '(':
-	// 	return s.makeToken(T_LEFT_PAREN)
-	// case ')':
-	// 	return s.makeToken(T_RIGHT_PAREN)
-	// case '{':
-	// 	return s.makeToken(T_LEFT_BRACE)
-	// case '}':
-	// 	return s.makeToken(T_RIGHT_BRACE)
-	// case ';':
-	// 	return s.makeToken(T_SEMICOLON)
-	// case ',':
-	// 	return s.makeToken(T_COMMA)
-	// case '.':
-	// 	return s.makeToken(T_DOT)
-	// case '-':
-	// 	return s.makeToken(T_MINUS)
-	// case '+':
-	// 	return s.makeToken(T_PLUS)
-	// case '/':
-	// 	return s.makeToken(T_SLASH)
-	// case '*':
-	// 	return s.makeToken(T_STAR)
-	// case '!':
-	// 	if s.match('=') {
-	// 		return s.makeToken(T_BANG_EQUAL)
-	// 	} else {
-	// 		return s.makeToken(T_BANG)
-	// 	}
-	// case '=':
-	// 	if s.match('=') {
-	// 		return s.makeToken(T_EQUAL_EQUAL)
-	// 	} else {
-	// 		return s.makeToken(T_EQUAL)
-	// 	}
-	// case '<':
-	// 	if s.match('=') {
-	// 		return s.makeToken(T_LESS_EQUAL)
-	// 	} else {
-	// 		return s.makeToken(T_LESS)
-	// 	}
-	// case '>':
-	// 	if s.match('=') {
-	// 		return s.makeToken(T_GREATER_EQUAL)
-	// 	} else {
-	// 		return s.makeToken(T_GREATER)
-	// 	}
-	// }
-	// return s.errorToken("Unexpected character.")
-	// -- end book version --
 }
 
 func (s *Scanner) emit(t TokenKind) {
@@ -230,13 +173,6 @@ func (s *Scanner) advance() byte {
 	return s.source[s.current-1]
 }
 
-// static bool match(char expected) {
-//   if (isAtEnd()) return false;
-//   if (*scanner.current != expected) return false;
-//   scanner.current++;
-//   return true;
-// }
-
 func (s *Scanner) match(expected byte) bool {
 	if s.isAtEnd() {
 		return false
@@ -249,17 +185,3 @@ func (s *Scanner) match(expected byte) bool {
 		return false
 	}
 }
-
-// func makeScanner(source []uint8) Scanner {
-// 	return Scanner{0, 0, 1, source}
-// }
-
-// func (s *Scanner) scanAny() {
-// 	c := s.source[s.current]
-// 	switch {
-// 	case 'a' <= c && c <= 'z':
-// 		panic("todo")
-// 	case '0' <= c && c <= '9':
-// 		panic("todo")
-// 	}
-// }
