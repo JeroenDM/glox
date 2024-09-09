@@ -97,6 +97,8 @@ func scanTopLevel(s *Scanner) stateFn {
 		return nil
 	}
 
+	s.skipWhitespace()
+
 	c := s.advance()
 	switch c {
 	case '(':
@@ -118,7 +120,7 @@ func scanTopLevel(s *Scanner) stateFn {
 	case '+':
 		s.emit(T_PLUS)
 	case '/':
-		s.emit(T_SLASH)
+		return scanMaybeComment
 	case '*':
 		s.emit(T_STAR)
 	case '!':
@@ -146,8 +148,30 @@ func scanPair(second byte, double TokenKind, single TokenKind) stateFn {
 	}
 }
 
+func scanMaybeComment(s *Scanner) stateFn {
+	if s.match('/') {
+		return scanComment
+	} else {
+		s.emit(T_SLASH)
+		return scanTopLevel
+	}
+}
+
+func scanComment(s *Scanner) stateFn {
+	for s.peek() != '\n' && !s.isAtEnd() {
+		s.advance()
+	}
+	s.advance() // skip past the '\n'
+	s.discard() // Don't emit a token for the comment's content
+	return scanTopLevel
+}
+
 func (s *Scanner) emit(t TokenKind) {
 	s.tokens <- s.makeToken(t)
+	s.start = s.current
+}
+
+func (s *Scanner) discard() {
 	s.start = s.current
 }
 
@@ -178,10 +202,29 @@ func (s *Scanner) match(expected byte) bool {
 		return false
 	}
 
-	if s.source[s.current] == expected {
-		s.current += 1
-		return true
-	} else {
+	if s.source[s.current] != expected {
 		return false
+	}
+
+	s.current += 1
+	return true
+}
+
+func (s *Scanner) peek() byte {
+	return s.source[s.current]
+}
+
+func (s *Scanner) skipWhitespace() {
+	for {
+		c := s.peek()
+		if c == ' ' || c == '\r' || c == '\t' {
+			s.advance()
+		} else if c == '\n' {
+			s.advance()
+			s.line += 1
+		} else {
+			s.discard()
+			return
+		}
 	}
 }
