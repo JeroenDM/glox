@@ -10,6 +10,10 @@ func TestScanner(t *testing.T) {
 	// source := "(*!=*!<==>===="
 	source := `(*=/== 
 	// comment
+	34 34.9 .9 3. 
+	"string1"
+	"string
+	two"
 	))`
 	line := -1
 	_, tokens := scan([]byte(source))
@@ -21,7 +25,7 @@ func TestScanner(t *testing.T) {
 		} else {
 			fmt.Print("   | ")
 		}
-		fmt.Printf("%2d '%s'\n", token.kind, token.lexeme)
+		fmt.Printf("%-20v '%s'\n", token.kind, token.lexeme)
 		if token.kind == T_EOF {
 			break
 		}

@@ -4,6 +4,7 @@
 
 package main
 
+//go:generate stringer -type TokenKind
 type TokenKind int
 
 const (
@@ -70,7 +71,6 @@ type Scanner struct {
 	current int // position of the next position to be scanned
 	line    int
 	source  []byte
-	state   stateFn
 	tokens  chan Token
 }
 
@@ -94,12 +94,19 @@ func scan(source []byte) (*Scanner, chan Token) {
 
 func scanTopLevel(s *Scanner) stateFn {
 	if s.isAtEnd() {
+		s.emit(T_EOF)
 		return nil
 	}
 
 	s.skipWhitespace()
 
 	c := s.advance()
+
+	// Things I don't know how to put into the switch below
+	if isDigit(c) {
+		return scanNumber
+	}
+
 	switch c {
 	case '(':
 		s.emit(T_LEFT_PAREN)
@@ -131,6 +138,8 @@ func scanTopLevel(s *Scanner) stateFn {
 		return scanPair('=', T_LESS_EQUAL, T_LESS)
 	case '>':
 		return scanPair('=', T_GREATER_EQUAL, T_GREATER)
+	case '"':
+		return scanString
 	default:
 		s.emitError("Unexpected character.")
 	}
@@ -161,8 +170,44 @@ func scanComment(s *Scanner) stateFn {
 	for s.peek() != '\n' && !s.isAtEnd() {
 		s.advance()
 	}
-	s.advance() // skip past the '\n'
+	s.advance() // Skip past the '\n'
 	s.discard() // Don't emit a token for the comment's content
+	return scanTopLevel
+}
+
+// Scan (multi-line) string literal and keep track of the line count.
+func scanString(s *Scanner) stateFn {
+	for s.peek() != '"' && !s.isAtEnd() {
+		if s.peek() == '\n' {
+			s.line += 1
+		}
+		s.advance()
+	}
+	// peek == '"" or s.isAtEnd
+	if s.isAtEnd() {
+		s.emitError("unterminated string.")
+	}
+	// peek == '"'
+	s.advance() // Skip past the '"'
+	s.emit(T_STRING)
+	return scanTopLevel
+}
+
+func scanNumber(s *Scanner) stateFn {
+
+	for isDigit(s.peek()) && !s.isAtEnd() {
+		s.advance()
+	}
+
+	if s.peek() == '.' && !s.isAtEnd() && isDigit(s.source[s.current+1]) {
+		s.advance()
+		for isDigit(s.peek()) && !s.isAtEnd() {
+			s.advance()
+		}
+	}
+
+	s.emit(T_NUMBER)
+
 	return scanTopLevel
 }
 
@@ -171,6 +216,8 @@ func (s *Scanner) emit(t TokenKind) {
 	s.start = s.current
 }
 
+// Reset start idx without emitting token.
+// Serves as an entry point to search for and emit new tokens in the future.
 func (s *Scanner) discard() {
 	s.start = s.current
 }
@@ -214,6 +261,11 @@ func (s *Scanner) peek() byte {
 	return s.source[s.current]
 }
 
+func isDigit(c uint8) bool {
+	return '0' <= c && c <= '9'
+}
+
+// Precondition: assumes we are NOT at the end.
 func (s *Scanner) skipWhitespace() {
 	for {
 		c := s.peek()
