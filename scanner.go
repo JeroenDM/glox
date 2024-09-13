@@ -4,6 +4,8 @@
 
 package main
 
+import "bytes"
+
 //go:generate stringer -type TokenKind
 type TokenKind int
 
@@ -105,6 +107,9 @@ func scanTopLevel(s *Scanner) stateFn {
 	// Things I don't know how to put into the switch below
 	if isDigit(c) {
 		return scanNumber
+	}
+	if isAlpha(c) {
+		return scanIdentifier
 	}
 
 	switch c {
@@ -211,6 +216,51 @@ func scanNumber(s *Scanner) stateFn {
 	return scanTopLevel
 }
 
+func scanIdentifier(s *Scanner) stateFn {
+	for isAlpha(s.peek()) || isDigit(s.peek()) {
+		s.advance()
+	}
+
+	switch s.source[s.start] {
+	case 'a':
+		return scanKeyword(1, []uint8("nd"), T_AND)
+	case 'c':
+		return scanKeyword(1, []uint8("lass"), T_CLASS)
+	case 'e':
+		return scanKeyword(1, []uint8("lse"), T_ELSE)
+	case 'i':
+		return scanKeyword(1, []uint8("f"), T_IF)
+	case 'n':
+		return scanKeyword(1, []uint8("il"), T_NIL)
+	case 'o':
+		return scanKeyword(1, []uint8("r"), T_OR)
+	case 'p':
+		return scanKeyword(1, []uint8("rint"), T_PRINT)
+	case 'r':
+		return scanKeyword(1, []uint8("eturn"), T_RETURN)
+	case 's':
+		return scanKeyword(1, []uint8("uper"), T_SUPER)
+	case 'v':
+		return scanKeyword(1, []uint8("ar"), T_VAR)
+	case 'w':
+		return scanKeyword(1, []uint8("hile"), T_WHILE)
+	}
+	s.emit(T_IDENTIFIER)
+	return scanTopLevel
+}
+
+func scanKeyword(start int, rest []uint8, t TokenKind) stateFn {
+	return func(s *Scanner) stateFn {
+		if bytes.Equal(s.source[(s.start+start):s.current], rest) {
+			s.emit(t)
+		} else {
+			s.emit(T_IDENTIFIER)
+
+		}
+		return scanTopLevel
+	}
+}
+
 func (s *Scanner) emit(t TokenKind) {
 	s.tokens <- s.makeToken(t)
 	s.start = s.current
@@ -263,6 +313,10 @@ func (s *Scanner) peek() byte {
 
 func isDigit(c uint8) bool {
 	return '0' <= c && c <= '9'
+}
+
+func isAlpha(c uint8) bool {
+	return 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '_'
 }
 
 // Precondition: assumes we are NOT at the end.

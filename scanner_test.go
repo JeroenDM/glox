@@ -14,6 +14,7 @@ func TestScanner(t *testing.T) {
 	"string1"
 	"string
 	two"
+	and class clam super
 	))`
 	line := -1
 	_, tokens := scan([]byte(source))
