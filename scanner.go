@@ -200,11 +200,11 @@ func scanString(s *Scanner) stateFn {
 
 func scanNumber(s *Scanner) stateFn {
 
-	for isDigit(s.peek()) && !s.isAtEnd() {
+	for !s.isAtEnd() && isDigit(s.peek()) {
 		s.advance()
 	}
 
-	if s.peek() == '.' && !s.isAtEnd() && isDigit(s.source[s.current+1]) {
+	if !s.isAtEnd() && s.peek() == '.' && isDigit(s.source[s.current+1]) {
 		s.advance()
 		for isDigit(s.peek()) && !s.isAtEnd() {
 			s.advance()

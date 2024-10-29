@@ -13,8 +13,8 @@ const (
 	INTERPRET_RUNTIME_ERROR
 )
 
-func (e *InterpretError) Error() string {
-	switch *e {
+func (e InterpretError) Error() string {
+	switch e {
 	case INTERPRET_COMPILE_ERROR:
 		return "compile error"
 	case INTERPRET_RUNTIME_ERROR:
@@ -41,6 +41,20 @@ func (vm *VM) InterpretChunk(chunk *Chunk) error {
 	vm.chunk = chunk
 	vm.ip = 0
 	return vm.run()
+}
+
+func (vm *VM) Interpret(source []uint8) error {
+	c := makeChunk()
+
+	err := compile(source, &c)
+	if err != nil {
+		return INTERPRET_COMPILE_ERROR
+	}
+	return nil
+
+	// vm.chunk = &c
+	// vm.ip = 0
+	// return vm.run()
 }
 
 func (vm *VM) run() error {

@@ -25,12 +25,13 @@ func main() {
 }
 
 func runFile(filename string) {
+	fmt.Println("Running file: ", filename)
 	content, e := os.ReadFile(filename)
 	if e != nil {
 		fmt.Printf("ERROR: %s", e)
 		fmt.Printf("Failed to open file: '%s'\n", filename)
 	}
-	run(string(content))
+	run(content)
 }
 
 func runByteCode(filename string) {
@@ -64,10 +65,11 @@ func runPrompt() {
 		if text == "\n" {
 			break
 		}
-		run(text)
+		run([]uint8(text))
 	}
 }
 
-func run(code string) {
-	fmt.Printf("Running code: %s", code)
+func run(source []uint8) {
+	vm := MakeVM()
+	vm.Interpret(source)
 }
