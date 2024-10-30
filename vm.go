@@ -50,14 +50,12 @@ func (vm *VM) Interpret(source []uint8) error {
 	c := makeChunk()
 
 	err := compile(source, &c)
-	if err != nil {
+	if err {
 		return INTERPRET_COMPILE_ERROR
 	}
 
-	for i := 0; i < STACK_MAX; i++ {
-		c.Write(uint8(OP_CONSTANT), 0)
-		c.Write(c.addConstant(Value(i)), 0)
-	}
+	c.Write(uint8(OP_CONSTANT), 0)
+	c.Write(c.addConstant(Value(1234.5)), 0)
 	c.Write(uint8(OP_RETURN), 1)
 
 	vm.chunk = &c

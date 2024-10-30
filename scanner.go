@@ -96,7 +96,7 @@ func scan(source []byte) (*Scanner, chan Token) {
 
 func scanTopLevel(s *Scanner) stateFn {
 	if s.isAtEnd() {
-		s.emit(T_EOF)
+		s.emit(T_EOF) // Removing this causes an infinite loop in the compiler.
 		return nil
 	}
 
