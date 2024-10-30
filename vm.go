@@ -24,7 +24,10 @@ func (e InterpretError) Error() string {
 	return "unknown interpret error"
 }
 
-const STACK_MAX = 256
+// One less than 256, stackTop points to the next empty element,
+// therefore we need 256 as a token to signify that the stack is full,
+// otherwise the uint8 would overflow to zero and it would look like the stack is empty.
+const STACK_MAX = 255
 
 type VM struct {
 	chunk    *Chunk
@@ -50,11 +53,16 @@ func (vm *VM) Interpret(source []uint8) error {
 	if err != nil {
 		return INTERPRET_COMPILE_ERROR
 	}
-	return nil
 
-	// vm.chunk = &c
-	// vm.ip = 0
-	// return vm.run()
+	for i := 0; i < STACK_MAX; i++ {
+		c.Write(uint8(OP_CONSTANT), 0)
+		c.Write(c.addConstant(Value(i)), 0)
+	}
+	c.Write(uint8(OP_RETURN), 1)
+
+	vm.chunk = &c
+	vm.ip = 0
+	return vm.run()
 }
 
 func (vm *VM) run() error {
@@ -100,11 +108,18 @@ func (vm *VM) resetStack() {
 }
 
 func (vm *VM) push(value Value) {
+	if vm.stackTop == STACK_MAX {
+		msg := fmt.Sprintf("Stack overflow! Max stack size (%d) reached.", STACK_MAX)
+		panic(msg)
+	}
 	vm.stack[vm.stackTop] = value
 	vm.stackTop++
 }
 
 func (vm *VM) pop() Value {
+	if vm.stackTop == 0 {
+		panic("Cannot pop value from an empty stack.")
+	}
 	vm.stackTop--
 	return vm.stack[vm.stackTop]
 }

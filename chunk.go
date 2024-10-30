@@ -40,12 +40,12 @@ func makeChunk() Chunk {
 	}
 }
 
-func (chunk *Chunk) simpleInstruction(label string, offset int) int {
+func (chunk *Chunk) printSimpleInstruction(label string, offset int) int {
 	fmt.Println(label)
 	return offset + 1
 }
 
-func (chunk *Chunk) constantInstruction(name string, offset int) int {
+func (chunk *Chunk) printConstantInstruction(name string, offset int) int {
 	constant := chunk.Code[offset+1]
 	fmt.Printf("%-16s %4d '", name, constant)
 	printValue(chunk.Constants[constant])
@@ -66,19 +66,19 @@ func (chunk *Chunk) DisassembleInstruction(offset int) int {
 	c := OpCode(chunk.Code[offset])
 	switch c {
 	case OP_CONSTANT:
-		offset = chunk.constantInstruction("OP_CONSTANT", offset)
+		offset = chunk.printConstantInstruction("OP_CONSTANT", offset)
 	case OP_ADD:
-		offset = chunk.simpleInstruction("ADD", offset)
+		offset = chunk.printSimpleInstruction("ADD", offset)
 	case OP_SUBTRACT:
-		offset = chunk.simpleInstruction("OP_SUBTRACT", offset)
+		offset = chunk.printSimpleInstruction("OP_SUBTRACT", offset)
 	case OP_MULTIPLY:
-		offset = chunk.simpleInstruction("OP_MULTIPLY", offset)
+		offset = chunk.printSimpleInstruction("OP_MULTIPLY", offset)
 	case OP_DIVIDE:
-		offset = chunk.simpleInstruction("OP_DIVIDE", offset)
+		offset = chunk.printSimpleInstruction("OP_DIVIDE", offset)
 	case OP_NEGATE:
-		offset = chunk.simpleInstruction("OP_NEGATE", offset)
+		offset = chunk.printSimpleInstruction("OP_NEGATE", offset)
 	case OP_RETURN:
-		offset = chunk.simpleInstruction("OP_RETURN", offset)
+		offset = chunk.printSimpleInstruction("OP_RETURN", offset)
 	default:
 		fmt.Printf("Unknown opcode %d\n", c)
 		offset += 1

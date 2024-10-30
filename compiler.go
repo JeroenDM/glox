@@ -54,6 +54,5 @@ func compile(source []uint8, c *Chunk) error {
 			break
 		}
 	}
-	fmt.Print(c)
 	return nil
 }
