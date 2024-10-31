@@ -14,6 +14,8 @@ type Parser struct {
 	compilingChunk *Chunk
 }
 
+var p Parser
+
 func prettyPrint(token Token, prev_line int) {
 	if token.line != prev_line {
 		fmt.Printf("%4d ", token.line)
@@ -23,12 +25,12 @@ func prettyPrint(token Token, prev_line int) {
 	fmt.Printf("%-20v '%s'\n", token.kind, token.lexeme)
 }
 
-func (p *Parser) currentChunk() *Chunk {
+func currentChunk() *Chunk {
 	return p.compilingChunk
 }
 
 // Main error functions, the others are just wrappers around this one.
-func (p *Parser) errorAt(t *Token, msg string) {
+func errorAt(t *Token, msg string) {
 	p.panicMode = true
 
 	fmt.Fprintf(os.Stderr, "[line %d] Error", t.line)
@@ -45,15 +47,15 @@ func (p *Parser) errorAt(t *Token, msg string) {
 	p.hadError = true
 }
 
-func (p *Parser) error(msg string) {
-	p.errorAt(p.prev, msg)
+func perror(msg string) {
+	errorAt(p.prev, msg)
 }
 
-func (p *Parser) errorAtCurrent(msg string) {
-	p.errorAt(p.curr, msg)
+func errorAtCurrent(msg string) {
+	errorAt(p.curr, msg)
 }
 
-func (p *Parser) advance() {
+func advance() {
 	p.prev = p.curr
 
 	// report and skip errors
@@ -62,38 +64,38 @@ func (p *Parser) advance() {
 		if p.curr.kind != T_ERROR {
 			break
 		}
-		p.errorAtCurrent(string(p.curr.lexeme))
+		errorAtCurrent(string(p.curr.lexeme))
 	}
 }
 
 // Foundation for reporting syntax errors in compiler.
 // https://craftinginterpreters.com/compiling-expressions.html#handling-syntax-errors
-func (p *Parser) consume(t TokenKind, errMsg string) {
+func consume(t TokenKind, errMsg string) {
 	if p.curr.kind == t {
-		p.advance()
+		advance()
 	} else {
-		p.errorAtCurrent(errMsg)
+		errorAtCurrent(errMsg)
 	}
 }
 
-func (p *Parser) emitByte(b byte) {
-	p.currentChunk().Write(b, p.prev.line)
+func emitByte(b byte) {
+	currentChunk().Write(b, p.prev.line)
 }
 
-func (p *Parser) emitBytes(b1, b2 byte) {
-	p.emitByte(b1)
-	p.emitByte(b2)
+func emitBytes(b1, b2 byte) {
+	emitByte(b1)
+	emitByte(b2)
 }
 
-func (p *Parser) endCompiler() {
+func endCompiler() {
 	// Temporary, (and inline version of 'emitReturn' function).
-	p.emitByte(byte(OP_RETURN))
+	emitByte(byte(OP_RETURN))
 }
 
-func (p *Parser) expression() {
+func expression() {
 	prev_line := -1
 	for {
-		p.advance()
+		advance()
 		prettyPrint(*p.curr, prev_line)
 		prev_line = p.curr.line
 
@@ -106,7 +108,7 @@ func (p *Parser) expression() {
 func compile(source []uint8, c *Chunk) bool {
 	_, tokens := scan([]byte(source))
 
-	parser := Parser{
+	p = Parser{
 		curr:           nil,
 		prev:           nil,
 		tokens:         tokens,
@@ -117,11 +119,11 @@ func compile(source []uint8, c *Chunk) bool {
 
 	// prev_line := -1
 
-	parser.advance()
-	parser.expression()
-	parser.consume(T_EOF, "Expect end of expression.")
+	advance()
+	expression()
+	consume(T_EOF, "Expect end of expression.")
 
 	// parser.endCompiler()
 	// TODO, make this an actual error?
-	return parser.hadError
+	return p.hadError
 }
