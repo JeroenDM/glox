@@ -6,11 +6,12 @@ import (
 )
 
 type Parser struct {
-	curr      *Token
-	prev      *Token
-	tokens    chan Token
-	hadError  bool
-	panicMode bool
+	curr           *Token
+	prev           *Token
+	tokens         chan Token
+	hadError       bool
+	panicMode      bool
+	compilingChunk *Chunk
 }
 
 func prettyPrint(token Token, prev_line int) {
@@ -20,6 +21,10 @@ func prettyPrint(token Token, prev_line int) {
 		fmt.Print("   | ")
 	}
 	fmt.Printf("%-20v '%s'\n", token.kind, token.lexeme)
+}
+
+func (p *Parser) currentChunk() *Chunk {
+	return p.compilingChunk
 }
 
 // Main error functions, the others are just wrappers around this one.
@@ -61,12 +66,28 @@ func (p *Parser) advance() {
 	}
 }
 
+// Foundation for reporting syntax errors in compiler.
+// https://craftinginterpreters.com/compiling-expressions.html#handling-syntax-errors
 func (p *Parser) consume(t TokenKind, errMsg string) {
 	if p.curr.kind == t {
 		p.advance()
 	} else {
 		p.errorAtCurrent(errMsg)
 	}
+}
+
+func (p *Parser) emitByte(b byte) {
+	p.currentChunk().Write(b, p.prev.line)
+}
+
+func (p *Parser) emitBytes(b1, b2 byte) {
+	p.emitByte(b1)
+	p.emitByte(b2)
+}
+
+func (p *Parser) endCompiler() {
+	// Temporary, (and inline version of 'emitReturn' function).
+	p.emitByte(byte(OP_RETURN))
 }
 
 func (p *Parser) expression() {
@@ -85,7 +106,14 @@ func (p *Parser) expression() {
 func compile(source []uint8, c *Chunk) bool {
 	_, tokens := scan([]byte(source))
 
-	parser := Parser{curr: nil, prev: nil, tokens: tokens, hadError: false, panicMode: false}
+	parser := Parser{
+		curr:           nil,
+		prev:           nil,
+		tokens:         tokens,
+		hadError:       false,
+		panicMode:      false,
+		compilingChunk: c,
+	}
 
 	// prev_line := -1
 
@@ -93,5 +121,7 @@ func compile(source []uint8, c *Chunk) bool {
 	parser.expression()
 	parser.consume(T_EOF, "Expect end of expression.")
 
+	// parser.endCompiler()
+	// TODO, make this an actual error?
 	return parser.hadError
 }

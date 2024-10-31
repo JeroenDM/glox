@@ -49,8 +49,8 @@ func (vm *VM) InterpretChunk(chunk *Chunk) error {
 func (vm *VM) Interpret(source []uint8) error {
 	c := makeChunk()
 
-	err := compile(source, &c)
-	if err {
+	hadError := compile(source, &c)
+	if hadError {
 		return INTERPRET_COMPILE_ERROR
 	}
 
