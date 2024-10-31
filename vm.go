@@ -54,10 +54,6 @@ func (vm *VM) Interpret(source []uint8) error {
 		return INTERPRET_COMPILE_ERROR
 	}
 
-	c.Write(uint8(OP_CONSTANT), 0)
-	c.Write(c.addConstant(Value(1234.5)), 0)
-	c.Write(uint8(OP_RETURN), 1)
-
 	vm.chunk = &c
 	vm.ip = 0
 	return vm.run()

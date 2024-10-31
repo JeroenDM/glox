@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
+	"strconv"
 )
 
 type Parser struct {
@@ -92,12 +94,48 @@ func endCompiler() {
 	emitByte(byte(OP_RETURN))
 }
 
+func makeConstant(x Value) byte {
+	b := currentChunk().addConstant(x)
+	if b > math.MaxInt8 {
+		perror("Too many constants in one chunk.")
+		return 0
+	} else {
+		return b
+	}
+}
+
+func emitConstant(x Value) {
+	emitBytes(byte(OP_CONSTANT), makeConstant(x))
+}
+
+func number() {
+	x, err := strconv.ParseFloat(string(p.prev.lexeme), 64)
+	if err != nil {
+		panic(fmt.Sprintf("Compiler failed to parse float: %v", err))
+	}
+	emitConstant(Value(x))
+}
+
+func myPlus() {
+	advance()
+	number()
+	emitByte(byte(OP_ADD))
+}
+
 func expression() {
 	prev_line := -1
 	for {
 		advance()
-		prettyPrint(*p.curr, prev_line)
-		prev_line = p.curr.line
+		prettyPrint(*p.prev, prev_line)
+		prev_line = p.prev.line
+
+		if p.prev.kind == T_NUMBER {
+			number()
+		}
+
+		if p.prev.kind == T_PLUS {
+			myPlus()
+		}
 
 		if p.curr.kind == T_EOF {
 			break
@@ -123,7 +161,7 @@ func compile(source []uint8, c *Chunk) bool {
 	expression()
 	consume(T_EOF, "Expect end of expression.")
 
-	// parser.endCompiler()
+	endCompiler()
 	// TODO, make this an actual error?
 	return p.hadError
 }
