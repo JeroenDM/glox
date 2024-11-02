@@ -16,7 +16,30 @@ type Parser struct {
 	compilingChunk *Chunk
 }
 
+type Precedence int
+
+const (
+	PREC_NONE       Precedence = iota
+	PREC_ASSIGNMENT            // =
+	PREC_OR                    // or
+	PREC_AND                   // and
+	PREC_EQUALITY              // == !=
+	PREC_COMPARISON            // < > <= >=
+	PREC_TERM                  // + -
+	PREC_FACTOR                // * /
+	PREC_UNARY                 // ! -
+	PREC_CALL                  // . ()
+	PREC_PRIMARY
+)
+
+type ParseRule struct {
+	prefix func()
+	infix  func()
+	prec   Precedence
+}
+
 var p Parser
+var rules [T_NUM_TOKENS]ParseRule
 
 func prettyPrint(token Token, prev_line int) {
 	if token.line != prev_line {
@@ -92,6 +115,36 @@ func emitBytes(b1, b2 byte) {
 func endCompiler() {
 	// Temporary, (and inline version of 'emitReturn' function).
 	emitByte(byte(OP_RETURN))
+
+	// TODO ifdef debug
+	if !p.hadError {
+		p.compilingChunk.Disassemble("code")
+	}
+}
+
+func binary() {
+	opKind := p.prev.kind
+	rule := &rules[opKind]
+	parsePrecedence(rule.prec + 1)
+
+	switch opKind {
+	case T_PLUS:
+		emitByte(byte(OP_ADD))
+	case T_MINUS:
+		emitByte(byte(OP_SUBTRACT))
+	case T_STAR:
+		emitByte(byte(OP_MULTIPLY))
+	case T_SLASH:
+		emitByte(byte(OP_DIVIDE))
+	default:
+		panic("Invalid binary operator token kind.")
+
+	}
+}
+
+func grouping() {
+	expression()
+	consume(T_RIGHT_PAREN, "Expect ')' after expression.")
 }
 
 func makeConstant(x Value) byte {
@@ -116,34 +169,87 @@ func number() {
 	emitConstant(Value(x))
 }
 
-func myPlus() {
-	advance()
-	number()
-	emitByte(byte(OP_ADD))
-}
+func unary() {
+	tKind := p.prev.kind
 
-func expression() {
-	prev_line := -1
-	for {
-		advance()
-		prettyPrint(*p.prev, prev_line)
-		prev_line = p.prev.line
+	parsePrecedence(PREC_UNARY)
 
-		if p.prev.kind == T_NUMBER {
-			number()
-		}
-
-		if p.prev.kind == T_PLUS {
-			myPlus()
-		}
-
-		if p.curr.kind == T_EOF {
-			break
-		}
+	switch tKind {
+	case T_MINUS:
+		emitByte(byte(OP_NEGATE))
+	default:
+		panic("Invalid unary operator token kind.")
 	}
 }
 
+func makeRules() {
+	rules[T_LEFT_PAREN] = ParseRule{grouping, nil, PREC_NONE}
+	rules[T_RIGHT_PAREN] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_LEFT_BRACE] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_RIGHT_BRACE] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_COMMA] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_DOT] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_MINUS] = ParseRule{unary, binary, PREC_TERM}
+	rules[T_PLUS] = ParseRule{nil, binary, PREC_TERM}
+	rules[T_SEMICOLON] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_SLASH] = ParseRule{nil, binary, PREC_FACTOR}
+	rules[T_STAR] = ParseRule{nil, binary, PREC_FACTOR}
+	rules[T_BANG] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_BANG_EQUAL] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_EQUAL] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_EQUAL_EQUAL] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_GREATER] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_GREATER_EQUAL] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_LESS] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_LESS_EQUAL] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_IDENTIFIER] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_STRING] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_NUMBER] = ParseRule{number, nil, PREC_NONE}
+	rules[T_AND] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_CLASS] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_ELSE] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_FALSE] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_FOR] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_FUN] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_IF] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_NIL] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_OR] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_PRINT] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_RETURN] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_SUPER] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_THIS] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_TRUE] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_VAR] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_WHILE] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_ERROR] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_EOF] = ParseRule{nil, nil, PREC_NONE}
+}
+
+func parsePrecedence(prec Precedence) {
+	advance()
+	// TODO: &rules[], (&rules[]), or just rules?
+	prefixRule := rules[p.prev.kind].prefix
+	if prefixRule == nil {
+		perror("Expect expression.")
+		return
+	}
+
+	prefixRule()
+
+	for prec <= rules[p.curr.kind].prec {
+		advance()
+		infixRule := rules[p.prev.kind].infix
+		infixRule()
+	}
+}
+
+func expression() {
+	parsePrecedence(PREC_ASSIGNMENT)
+}
+
 func compile(source []uint8, c *Chunk) bool {
+	fmt.Printf("compiling code: %s\n", source)
+	makeRules()
 	_, tokens := scan([]byte(source))
 
 	p = Parser{

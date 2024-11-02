@@ -58,6 +58,8 @@ const (
 
 	T_ERROR
 	T_EOF
+
+	T_NUM_TOKENS
 )
 
 type Token struct {
