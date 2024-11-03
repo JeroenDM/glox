@@ -121,7 +121,7 @@ func parseByteCode(r io.Reader) (Chunk, error) {
 			if err != nil {
 				return chunk, err
 			}
-			chunk.Constants = append(chunk.Constants, Value(num))
+			chunk.Constants = append(chunk.Constants, NewNumber(Number(num)))
 		case "text":
 			parts := strings.Split(line, " ")
 			switch parts[0] {

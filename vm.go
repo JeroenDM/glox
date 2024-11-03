@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
 )
 
 type InterpretError uint8
 
-type BinaryOp func(Value, Value) Value
+type BinaryOp func(Number, Number) Number
 
 const (
 	INTERPRET_COMPILE_ERROR InterpretError = iota
@@ -62,26 +63,35 @@ func (vm *VM) Interpret(source []uint8) error {
 func (vm *VM) run() error {
 	for {
 		traceInstruction(vm, vm.ip)
+		var err error
 		switch OpCode(vm.readByte()) {
 		case OP_CONSTANT:
 			constant := vm.readConstant()
 			vm.push(constant)
 		case OP_NEGATE:
-			vm.push(-vm.pop())
+			if !(vm.peek(0).IsNumber()) {
+				vm.runtimeError("Operand must be a number.")
+				err = INTERPRET_RUNTIME_ERROR
+			}
+			vm.push(NewNumber(-vm.pop().AsNumber()))
 		case OP_ADD:
-			vm.binary(func(a Value, b Value) Value { return a + b })
+			err = vm.binary(NewNumber, func(a Number, b Number) Number { return a + b })
 		case OP_SUBTRACT:
-			vm.binary(func(a Value, b Value) Value { return a - b })
+			err = vm.binary(NewNumber, func(a Number, b Number) Number { return a - b })
 		case OP_MULTIPLY:
-			vm.binary(func(a Value, b Value) Value { return a * b })
+			err = vm.binary(NewNumber, func(a Number, b Number) Number { return a * b })
 		case OP_DIVIDE:
-			vm.binary(func(a Value, b Value) Value { return a / b })
+			err = vm.binary(NewNumber, func(a Number, b Number) Number { return a / b })
 		case OP_RETURN:
 			printValue(vm.pop())
 			fmt.Printf("\n")
 			return nil
 		default:
-
+			panic("Unknown opcode.")
+		}
+		// Break from for loop if we have an error.
+		if err != nil {
+			return err
 		}
 	}
 }
@@ -101,6 +111,15 @@ func (vm *VM) resetStack() {
 	vm.stackTop = 0
 }
 
+func (vm *VM) runtimeError(format string, a ...any) {
+	fmt.Fprintf(os.Stderr, format, a...)
+	fmt.Fprintf(os.Stderr, "\n")
+
+	line := vm.chunk.Lines[vm.ip-1]
+	fmt.Fprintf(os.Stderr, "[line %d] in script\n", line)
+	vm.resetStack()
+}
+
 func (vm *VM) push(value Value) {
 	if vm.stackTop == STACK_MAX {
 		msg := fmt.Sprintf("Stack overflow! Max stack size (%d) reached.", STACK_MAX)
@@ -118,9 +137,20 @@ func (vm *VM) pop() Value {
 	return vm.stack[vm.stackTop]
 }
 
-func (vm *VM) binary(op BinaryOp) {
+func (vm *VM) peek(distance uint8) Value {
+	return vm.stack[vm.stackTop-distance-1]
+}
+
+// TODO binary op should probably be generic to support multiple value types.
+func (vm *VM) binary(toValue func(Number) Value, op BinaryOp) error {
+	if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
+		vm.runtimeError("Operands must be numbers.")
+		return INTERPRET_RUNTIME_ERROR
+	}
 	// Order of pops is important!
-	b := vm.pop()
-	a := vm.pop()
-	vm.push(op(a, b))
+	b := vm.pop().AsNumber()
+	a := vm.pop().AsNumber()
+	vm.push(toValue(op(a, b)))
+
+	return nil
 }

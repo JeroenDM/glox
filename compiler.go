@@ -166,7 +166,7 @@ func number() {
 	if err != nil {
 		panic(fmt.Sprintf("Compiler failed to parse float: %v", err))
 	}
-	emitConstant(Value(x))
+	emitConstant(NewNumber(Number(x)))
 }
 
 func unary() {
