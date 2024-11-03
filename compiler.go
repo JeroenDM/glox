@@ -142,6 +142,19 @@ func binary() {
 	}
 }
 
+func literal() {
+	switch p.prev.kind {
+	case T_FALSE:
+		emitByte(byte(OP_FALSE))
+	case T_NIL:
+		emitByte(byte(OP_NIL))
+	case T_TRUE:
+		emitByte(byte(OP_TRUE))
+	default:
+		panic("Invalid token to create 'push literal' opcode.")
+	}
+}
+
 func grouping() {
 	expression()
 	consume(T_RIGHT_PAREN, "Expect ')' after expression.")
@@ -208,17 +221,17 @@ func makeRules() {
 	rules[T_AND] = ParseRule{nil, nil, PREC_NONE}
 	rules[T_CLASS] = ParseRule{nil, nil, PREC_NONE}
 	rules[T_ELSE] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_FALSE] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_FALSE] = ParseRule{literal, nil, PREC_NONE}
 	rules[T_FOR] = ParseRule{nil, nil, PREC_NONE}
 	rules[T_FUN] = ParseRule{nil, nil, PREC_NONE}
 	rules[T_IF] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_NIL] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_NIL] = ParseRule{literal, nil, PREC_NONE}
 	rules[T_OR] = ParseRule{nil, nil, PREC_NONE}
 	rules[T_PRINT] = ParseRule{nil, nil, PREC_NONE}
 	rules[T_RETURN] = ParseRule{nil, nil, PREC_NONE}
 	rules[T_SUPER] = ParseRule{nil, nil, PREC_NONE}
 	rules[T_THIS] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_TRUE] = ParseRule{nil, nil, PREC_NONE}
+	rules[T_TRUE] = ParseRule{literal, nil, PREC_NONE}
 	rules[T_VAR] = ParseRule{nil, nil, PREC_NONE}
 	rules[T_WHILE] = ParseRule{nil, nil, PREC_NONE}
 	rules[T_ERROR] = ParseRule{nil, nil, PREC_NONE}

@@ -74,6 +74,12 @@ func (vm *VM) run() error {
 				err = INTERPRET_RUNTIME_ERROR
 			}
 			vm.push(NewNumber(-vm.pop().AsNumber()))
+		case OP_NIL:
+			vm.push(NewNil())
+		case OP_TRUE:
+			vm.push(NewBool(true))
+		case OP_FALSE:
+			vm.push(NewBool(false))
 		case OP_ADD:
 			err = vm.binary(NewNumber, func(a Number, b Number) Number { return a + b })
 		case OP_SUBTRACT:

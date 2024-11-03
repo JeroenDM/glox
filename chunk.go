@@ -12,6 +12,9 @@ type OpCode uint8
 
 const (
 	OP_CONSTANT OpCode = iota
+	OP_NIL             // push nil literal on stack
+	OP_TRUE            // push true literal on stack
+	OP_FALSE           // push false literal on stack
 	OP_ADD
 	OP_SUBTRACT
 	OP_MULTIPLY
@@ -67,6 +70,12 @@ func (chunk *Chunk) DisassembleInstruction(offset int) int {
 	switch c {
 	case OP_CONSTANT:
 		offset = chunk.printConstantInstruction("OP_CONSTANT", offset)
+	case OP_NIL:
+		offset = chunk.printSimpleInstruction("OP_NIL", offset)
+	case OP_TRUE:
+		offset = chunk.printSimpleInstruction("OP_TRUE", offset)
+	case OP_FALSE:
+		offset = chunk.printSimpleInstruction("OP_FALSE", offset)
 	case OP_ADD:
 		offset = chunk.printSimpleInstruction("ADD", offset)
 	case OP_SUBTRACT:

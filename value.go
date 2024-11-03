@@ -64,7 +64,16 @@ func (v Value) IsNil() bool {
 // type Value float64
 
 func printValue(x Value) {
-	fmt.Printf("%g", x.AsNumber())
+	switch x.kind {
+	case VAL_BOOL:
+		fmt.Printf("%t", x.AsBool())
+	case VAL_NIL:
+		fmt.Printf("nil")
+	case VAL_NUMBER:
+		fmt.Printf("%g", x.AsNumber())
+	default:
+		panic("Unknown value type.")
+	}
 }
 
 func bool2Number(b bool) Number {

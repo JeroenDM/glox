@@ -230,6 +230,17 @@ func scanIdentifier(s *Scanner) stateFn {
 		return scanKeyword(1, []uint8("lass"), T_CLASS)
 	case 'e':
 		return scanKeyword(1, []uint8("lse"), T_ELSE)
+	case 'f':
+		if s.current-s.start > 1 {
+			switch s.source[s.start+1] {
+			case 'a':
+				return scanKeyword(2, []uint8("lse"), T_FALSE)
+			case 'o':
+				return scanKeyword(2, []uint8("r"), T_FOR)
+			case 'u':
+				return scanKeyword(2, []uint8("n"), T_FUN)
+			}
+		}
 	case 'i':
 		return scanKeyword(1, []uint8("f"), T_IF)
 	case 'n':
@@ -242,6 +253,15 @@ func scanIdentifier(s *Scanner) stateFn {
 		return scanKeyword(1, []uint8("eturn"), T_RETURN)
 	case 's':
 		return scanKeyword(1, []uint8("uper"), T_SUPER)
+	case 't':
+		if s.current-s.start > 1 {
+			switch s.source[s.start+1] {
+			case 'h':
+				return scanKeyword(2, []uint8("is"), T_THIS)
+			case 'r':
+				return scanKeyword(2, []uint8("ue"), T_TRUE)
+			}
+		}
 	case 'v':
 		return scanKeyword(1, []uint8("ar"), T_VAR)
 	case 'w':
@@ -280,7 +300,7 @@ func (s *Scanner) emitError(message string) {
 }
 
 func (s *Scanner) isAtEnd() bool {
-	return s.current == len(s.source)
+	return s.current == (len(s.source) - 1)
 }
 
 func (s *Scanner) makeToken(t TokenKind) Token {
@@ -292,6 +312,9 @@ func (s *Scanner) errorToken(message string) Token {
 }
 
 func (s *Scanner) advance() byte {
+	if s.current == (len(s.source) - 1) {
+		panic("Trying to advance past the end of the source code bytes.")
+	}
 	s.current += 1
 	return s.source[s.current-1]
 }
