@@ -128,6 +128,18 @@ func binary() {
 	parsePrecedence(rule.prec + 1)
 
 	switch opKind {
+	case T_BANG_EQUAL:
+		emitBytes(byte(OP_EQUAL), byte(OP_NOT))
+	case T_EQUAL_EQUAL:
+		emitByte(byte(OP_EQUAL))
+	case T_GREATER:
+		emitByte(byte(OP_GREATER))
+	case T_GREATER_EQUAL:
+		emitBytes(byte(OP_LESS), byte(OP_NOT))
+	case T_LESS:
+		emitByte(byte(OP_LESS))
+	case T_LESS_EQUAL:
+		emitBytes(byte(OP_GREATER), byte(OP_NOT))
 	case T_PLUS:
 		emitByte(byte(OP_ADD))
 	case T_MINUS:
@@ -188,6 +200,8 @@ func unary() {
 	parsePrecedence(PREC_UNARY)
 
 	switch tKind {
+	case T_BANG:
+		emitByte(byte(OP_NOT))
 	case T_MINUS:
 		emitByte(byte(OP_NEGATE))
 	default:
@@ -208,14 +222,14 @@ func makeRules() {
 		T_SEMICOLON:     {nil, nil, PREC_NONE},
 		T_SLASH:         {nil, binary, PREC_FACTOR},
 		T_STAR:          {nil, binary, PREC_FACTOR},
-		T_BANG:          {nil, nil, PREC_NONE},
-		T_BANG_EQUAL:    {nil, nil, PREC_NONE},
+		T_BANG:          {unary, nil, PREC_NONE},
+		T_BANG_EQUAL:    {nil, binary, PREC_EQUALITY},
 		T_EQUAL:         {nil, nil, PREC_NONE},
-		T_EQUAL_EQUAL:   {nil, nil, PREC_NONE},
-		T_GREATER:       {nil, nil, PREC_NONE},
-		T_GREATER_EQUAL: {nil, nil, PREC_NONE},
-		T_LESS:          {nil, nil, PREC_NONE},
-		T_LESS_EQUAL:    {nil, nil, PREC_NONE},
+		T_EQUAL_EQUAL:   {nil, binary, PREC_EQUALITY},
+		T_GREATER:       {nil, binary, PREC_COMPARISON},
+		T_GREATER_EQUAL: {nil, binary, PREC_COMPARISON},
+		T_LESS:          {nil, binary, PREC_COMPARISON},
+		T_LESS_EQUAL:    {nil, binary, PREC_COMPARISON},
 		T_IDENTIFIER:    {nil, nil, PREC_NONE},
 		T_STRING:        {nil, nil, PREC_NONE},
 		T_NUMBER:        {number, nil, PREC_NONE},

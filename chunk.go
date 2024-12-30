@@ -15,10 +15,14 @@ const (
 	OP_NIL             // push nil literal on stack
 	OP_TRUE            // push true literal on stack
 	OP_FALSE           // push false literal on stack
+	OP_EQUAL
+	OP_GREATER
+	OP_LESS
 	OP_ADD
 	OP_SUBTRACT
 	OP_MULTIPLY
 	OP_DIVIDE
+	OP_NOT
 	OP_NEGATE
 	OP_RETURN
 )
@@ -76,6 +80,12 @@ func (chunk *Chunk) DisassembleInstruction(offset int) int {
 		offset = chunk.printSimpleInstruction("OP_TRUE", offset)
 	case OP_FALSE:
 		offset = chunk.printSimpleInstruction("OP_FALSE", offset)
+	case OP_EQUAL:
+		offset = chunk.printSimpleInstruction("OP_EQUAL", offset)
+	case OP_GREATER:
+		offset = chunk.printSimpleInstruction("OP_GREATER", offset)
+	case OP_LESS:
+		offset = chunk.printSimpleInstruction("OP_LESS", offset)
 	case OP_ADD:
 		offset = chunk.printSimpleInstruction("ADD", offset)
 	case OP_SUBTRACT:
@@ -84,6 +94,8 @@ func (chunk *Chunk) DisassembleInstruction(offset int) int {
 		offset = chunk.printSimpleInstruction("OP_MULTIPLY", offset)
 	case OP_DIVIDE:
 		offset = chunk.printSimpleInstruction("OP_DIVIDE", offset)
+	case OP_NOT:
+		offset = chunk.printSimpleInstruction("OP_NOT", offset)
 	case OP_NEGATE:
 		offset = chunk.printSimpleInstruction("OP_NEGATE", offset)
 	case OP_RETURN:

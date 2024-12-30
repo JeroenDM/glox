@@ -25,6 +25,10 @@ func (e InterpretError) Error() string {
 	return "unknown interpret error"
 }
 
+func isFalsey(value Value) bool {
+	return value.IsNil() || value.IsBool() && !value.AsBool()
+}
+
 // One less than 256, stackTop points to the next empty element,
 // therefore we need 256 as a token to signify that the stack is full,
 // otherwise the uint8 would overflow to zero and it would look like the stack is empty.
@@ -72,14 +76,23 @@ func (vm *VM) run() error {
 			if !(vm.peek(0).IsNumber()) {
 				vm.runtimeError("Operand must be a number.")
 				err = INTERPRET_RUNTIME_ERROR
+			} else {
+				vm.push(NewNumber(-vm.pop().AsNumber()))
 			}
-			vm.push(NewNumber(-vm.pop().AsNumber()))
 		case OP_NIL:
 			vm.push(NewNil())
 		case OP_TRUE:
 			vm.push(NewBool(true))
 		case OP_FALSE:
 			vm.push(NewBool(false))
+		case OP_EQUAL:
+			b := vm.pop()
+			a := vm.pop()
+			vm.push(NewBool(valuesEqual(a, b)))
+		case OP_GREATER:
+			vm.binaryBool(NewBool, func(a Number, b Number) bool { return a > b })
+		case OP_LESS:
+			vm.binaryBool(NewBool, func(a Number, b Number) bool { return a < b })
 		case OP_ADD:
 			err = vm.binary(NewNumber, func(a Number, b Number) Number { return a + b })
 		case OP_SUBTRACT:
@@ -88,6 +101,8 @@ func (vm *VM) run() error {
 			err = vm.binary(NewNumber, func(a Number, b Number) Number { return a * b })
 		case OP_DIVIDE:
 			err = vm.binary(NewNumber, func(a Number, b Number) Number { return a / b })
+		case OP_NOT:
+			vm.push(NewBool(isFalsey(vm.pop())))
 		case OP_RETURN:
 			printValue(vm.pop())
 			fmt.Printf("\n")
@@ -149,6 +164,19 @@ func (vm *VM) peek(distance uint8) Value {
 
 // TODO binary op should probably be generic to support multiple value types.
 func (vm *VM) binary(toValue func(Number) Value, op BinaryOp) error {
+	if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
+		vm.runtimeError("Operands must be numbers.")
+		return INTERPRET_RUNTIME_ERROR
+	}
+	// Order of pops is important!
+	b := vm.pop().AsNumber()
+	a := vm.pop().AsNumber()
+	vm.push(toValue(op(a, b)))
+
+	return nil
+}
+
+func (vm *VM) binaryBool(toValue func(bool) Value, op func(Number, Number) bool) error {
 	if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
 		vm.runtimeError("Operands must be numbers.")
 		return INTERPRET_RUNTIME_ERROR

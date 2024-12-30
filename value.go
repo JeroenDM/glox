@@ -91,3 +91,18 @@ func bool2Number(b bool) Number {
 func number2Bool(f Number) bool {
 	return !(f == 0.0)
 }
+func valuesEqual(a, b Value) bool {
+	if a.kind != b.kind {
+		return false
+	}
+	switch a.kind {
+	case VAL_BOOL:
+		return a.AsBool() == b.AsBool()
+	case VAL_NIL:
+		return true
+	case VAL_NUMBER:
+		return a.AsNumber() == b.AsNumber()
+	default:
+		panic("Should be unreachable (valuesEqual).")
+	}
+}
