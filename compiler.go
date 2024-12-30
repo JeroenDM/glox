@@ -72,11 +72,11 @@ func errorAt(t *Token, msg string) {
 	p.hadError = true
 }
 
-func perror(msg string) {
+func errorAtPrev(msg string) {
 	errorAt(p.prev, msg)
 }
 
-func errorAtCurrent(msg string) {
+func errorAtCurr(msg string) {
 	errorAt(p.curr, msg)
 }
 
@@ -89,7 +89,7 @@ func advance() {
 		if p.curr.kind != T_ERROR {
 			break
 		}
-		errorAtCurrent(string(p.curr.lexeme))
+		errorAtCurr(string(p.curr.lexeme))
 	}
 }
 
@@ -99,7 +99,7 @@ func consume(t TokenKind, errMsg string) {
 	if p.curr.kind == t {
 		advance()
 	} else {
-		errorAtCurrent(errMsg)
+		errorAtCurr(errMsg)
 	}
 }
 
@@ -163,7 +163,7 @@ func grouping() {
 func makeConstant(x Value) byte {
 	b := currentChunk().addConstant(x)
 	if b > math.MaxInt8 {
-		perror("Too many constants in one chunk.")
+		errorAtPrev("Too many constants in one chunk.")
 		return 0
 	} else {
 		return b
@@ -196,46 +196,48 @@ func unary() {
 }
 
 func makeRules() {
-	rules[T_LEFT_PAREN] = ParseRule{grouping, nil, PREC_NONE}
-	rules[T_RIGHT_PAREN] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_LEFT_BRACE] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_RIGHT_BRACE] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_COMMA] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_DOT] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_MINUS] = ParseRule{unary, binary, PREC_TERM}
-	rules[T_PLUS] = ParseRule{nil, binary, PREC_TERM}
-	rules[T_SEMICOLON] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_SLASH] = ParseRule{nil, binary, PREC_FACTOR}
-	rules[T_STAR] = ParseRule{nil, binary, PREC_FACTOR}
-	rules[T_BANG] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_BANG_EQUAL] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_EQUAL] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_EQUAL_EQUAL] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_GREATER] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_GREATER_EQUAL] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_LESS] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_LESS_EQUAL] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_IDENTIFIER] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_STRING] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_NUMBER] = ParseRule{number, nil, PREC_NONE}
-	rules[T_AND] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_CLASS] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_ELSE] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_FALSE] = ParseRule{literal, nil, PREC_NONE}
-	rules[T_FOR] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_FUN] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_IF] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_NIL] = ParseRule{literal, nil, PREC_NONE}
-	rules[T_OR] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_PRINT] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_RETURN] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_SUPER] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_THIS] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_TRUE] = ParseRule{literal, nil, PREC_NONE}
-	rules[T_VAR] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_WHILE] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_ERROR] = ParseRule{nil, nil, PREC_NONE}
-	rules[T_EOF] = ParseRule{nil, nil, PREC_NONE}
+	rules = [T_NUM_TOKENS]ParseRule{
+		T_LEFT_PAREN:    {grouping, nil, PREC_NONE},
+		T_RIGHT_PAREN:   {nil, nil, PREC_NONE},
+		T_LEFT_BRACE:    {nil, nil, PREC_NONE},
+		T_RIGHT_BRACE:   {nil, nil, PREC_NONE},
+		T_COMMA:         {nil, nil, PREC_NONE},
+		T_DOT:           {nil, nil, PREC_NONE},
+		T_MINUS:         {unary, binary, PREC_TERM},
+		T_PLUS:          {nil, binary, PREC_TERM},
+		T_SEMICOLON:     {nil, nil, PREC_NONE},
+		T_SLASH:         {nil, binary, PREC_FACTOR},
+		T_STAR:          {nil, binary, PREC_FACTOR},
+		T_BANG:          {nil, nil, PREC_NONE},
+		T_BANG_EQUAL:    {nil, nil, PREC_NONE},
+		T_EQUAL:         {nil, nil, PREC_NONE},
+		T_EQUAL_EQUAL:   {nil, nil, PREC_NONE},
+		T_GREATER:       {nil, nil, PREC_NONE},
+		T_GREATER_EQUAL: {nil, nil, PREC_NONE},
+		T_LESS:          {nil, nil, PREC_NONE},
+		T_LESS_EQUAL:    {nil, nil, PREC_NONE},
+		T_IDENTIFIER:    {nil, nil, PREC_NONE},
+		T_STRING:        {nil, nil, PREC_NONE},
+		T_NUMBER:        {number, nil, PREC_NONE},
+		T_AND:           {nil, nil, PREC_NONE},
+		T_CLASS:         {nil, nil, PREC_NONE},
+		T_ELSE:          {nil, nil, PREC_NONE},
+		T_FALSE:         {literal, nil, PREC_NONE},
+		T_FOR:           {nil, nil, PREC_NONE},
+		T_FUN:           {nil, nil, PREC_NONE},
+		T_IF:            {nil, nil, PREC_NONE},
+		T_NIL:           {literal, nil, PREC_NONE},
+		T_OR:            {nil, nil, PREC_NONE},
+		T_PRINT:         {nil, nil, PREC_NONE},
+		T_RETURN:        {nil, nil, PREC_NONE},
+		T_SUPER:         {nil, nil, PREC_NONE},
+		T_THIS:          {nil, nil, PREC_NONE},
+		T_TRUE:          {literal, nil, PREC_NONE},
+		T_VAR:           {nil, nil, PREC_NONE},
+		T_WHILE:         {nil, nil, PREC_NONE},
+		T_ERROR:         {nil, nil, PREC_NONE},
+		T_EOF:           {nil, nil, PREC_NONE},
+	}
 }
 
 func parsePrecedence(prec Precedence) {
@@ -243,7 +245,7 @@ func parsePrecedence(prec Precedence) {
 	// TODO: &rules[], (&rules[]), or just rules?
 	prefixRule := rules[p.prev.kind].prefix
 	if prefixRule == nil {
-		perror("Expect expression.")
+		errorAtPrev("Expect expression.")
 		return
 	}
 
