@@ -81,7 +81,6 @@ func (s *Scanner) run() {
 		state = state(s)
 	}
 	close(s.tokens) // No more tokens will be delivered
-
 }
 
 func scan(source []byte) (*Scanner, chan Token) {

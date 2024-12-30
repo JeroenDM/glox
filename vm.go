@@ -44,10 +44,10 @@ func (vm *VM) InterpretChunk(chunk *Chunk) error {
 }
 
 func (vm *VM) Interpret(source []uint8) error {
-	c := makeChunk()
+	chunk := makeChunk()
 
-	err := compile(source, &c)
-	if err != nil {
+	success := compile(source, &chunk)
+	if !success {
 		return INTERPRET_COMPILE_ERROR
 	}
 	return nil
