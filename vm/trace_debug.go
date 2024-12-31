@@ -1,7 +1,7 @@
 //go:build debug
 // +build debug
 
-package main
+package vm
 
 import "fmt"
 

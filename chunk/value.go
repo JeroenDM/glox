@@ -1,4 +1,4 @@
-package main
+package chunk
 
 import "fmt"
 
@@ -61,21 +61,6 @@ func (v Value) IsNil() bool {
 	return v.kind == VAL_NIL
 }
 
-// type Value float64
-
-func printValue(x Value) {
-	switch x.kind {
-	case VAL_BOOL:
-		fmt.Printf("%t", x.AsBool())
-	case VAL_NIL:
-		fmt.Printf("nil")
-	case VAL_NUMBER:
-		fmt.Printf("%g", x.AsNumber())
-	default:
-		panic("Unknown value type.")
-	}
-}
-
 func bool2Number(b bool) Number {
 	// The compiler currently only optimizes this form.
 	// https://dev.to/chigbeef_77/bool-int-but-stupid-in-go-3jb3
@@ -91,7 +76,8 @@ func bool2Number(b bool) Number {
 func number2Bool(f Number) bool {
 	return !(f == 0.0)
 }
-func valuesEqual(a, b Value) bool {
+
+func ValuesEqual(a, b Value) bool {
 	if a.kind != b.kind {
 		return false
 	}
@@ -104,5 +90,18 @@ func valuesEqual(a, b Value) bool {
 		return a.AsNumber() == b.AsNumber()
 	default:
 		panic("Should be unreachable (valuesEqual).")
+	}
+}
+
+func PrintValue(x Value) {
+	switch x.kind {
+	case VAL_BOOL:
+		fmt.Printf("%t", x.AsBool())
+	case VAL_NIL:
+		fmt.Printf("nil")
+	case VAL_NUMBER:
+		fmt.Printf("%g", x.AsNumber())
+	default:
+		panic("Unknown value type.")
 	}
 }

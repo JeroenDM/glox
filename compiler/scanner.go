@@ -2,7 +2,7 @@
 // https://www.youtube.com/watch?v=HxaD_trXwRE
 // https://go.dev/talks/2011/lex.slide#20
 
-package main
+package compiler
 
 import "bytes"
 

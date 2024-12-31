@@ -4,6 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+
+	"github.com/jeroendm/glox/chunk"
+	"github.com/jeroendm/glox/compiler"
+	"github.com/jeroendm/glox/vm"
 )
 
 func main() {
@@ -43,14 +47,14 @@ func runByteCode(filename string) {
 	}
 	defer file.Close()
 
-	chunk, err := parseByteCode(file)
+	chunk, err := chunk.ParseByteCode(file)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	chunk.Disassemble(filename)
 	fmt.Printf("\n --- running ---\n")
-	vm := MakeVM()
+	vm := vm.MakeVM()
 	vm.InterpretChunk(&chunk)
 }
 
@@ -70,6 +74,16 @@ func runPrompt() {
 }
 
 func run(source []uint8) {
-	vm := MakeVM()
-	vm.Interpret(source)
+	c := chunk.MakeChunk()
+
+	hadError := compiler.Compile(source, &c)
+	if hadError {
+		panic("Failed to compile.")
+	}
+
+	vm1 := vm.MakeVM()
+	err := vm1.Interpret(&c)
+	if err != nil {
+		panic("Runtime error.")
+	}
 }

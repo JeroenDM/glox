@@ -1,10 +1,12 @@
-package main
+package compiler
 
 import (
 	"fmt"
 	"math"
 	"os"
 	"strconv"
+
+	"github.com/jeroendm/glox/chunk"
 )
 
 type Parser struct {
@@ -13,7 +15,7 @@ type Parser struct {
 	tokens         chan Token
 	hadError       bool
 	panicMode      bool
-	compilingChunk *Chunk
+	compilingChunk *chunk.Chunk
 }
 
 type Precedence int
@@ -50,7 +52,7 @@ func prettyPrint(token Token, prev_line int) {
 	fmt.Printf("%-20v '%s'\n", token.kind, token.lexeme)
 }
 
-func currentChunk() *Chunk {
+func currentChunk() *chunk.Chunk {
 	return p.compilingChunk
 }
 
@@ -114,7 +116,7 @@ func emitBytes(b1, b2 byte) {
 
 func endCompiler() {
 	// Temporary, (and inline version of 'emitReturn' function).
-	emitByte(byte(OP_RETURN))
+	emitByte(byte(chunk.OP_RETURN))
 
 	// TODO ifdef debug
 	if !p.hadError {
@@ -129,25 +131,25 @@ func binary() {
 
 	switch opKind {
 	case T_BANG_EQUAL:
-		emitBytes(byte(OP_EQUAL), byte(OP_NOT))
+		emitBytes(byte(chunk.OP_EQUAL), byte(chunk.OP_NOT))
 	case T_EQUAL_EQUAL:
-		emitByte(byte(OP_EQUAL))
+		emitByte(byte(chunk.OP_EQUAL))
 	case T_GREATER:
-		emitByte(byte(OP_GREATER))
+		emitByte(byte(chunk.OP_GREATER))
 	case T_GREATER_EQUAL:
-		emitBytes(byte(OP_LESS), byte(OP_NOT))
+		emitBytes(byte(chunk.OP_LESS), byte(chunk.OP_NOT))
 	case T_LESS:
-		emitByte(byte(OP_LESS))
+		emitByte(byte(chunk.OP_LESS))
 	case T_LESS_EQUAL:
-		emitBytes(byte(OP_GREATER), byte(OP_NOT))
+		emitBytes(byte(chunk.OP_GREATER), byte(chunk.OP_NOT))
 	case T_PLUS:
-		emitByte(byte(OP_ADD))
+		emitByte(byte(chunk.OP_ADD))
 	case T_MINUS:
-		emitByte(byte(OP_SUBTRACT))
+		emitByte(byte(chunk.OP_SUBTRACT))
 	case T_STAR:
-		emitByte(byte(OP_MULTIPLY))
+		emitByte(byte(chunk.OP_MULTIPLY))
 	case T_SLASH:
-		emitByte(byte(OP_DIVIDE))
+		emitByte(byte(chunk.OP_DIVIDE))
 	default:
 		panic("Invalid binary operator token kind.")
 
@@ -157,11 +159,11 @@ func binary() {
 func literal() {
 	switch p.prev.kind {
 	case T_FALSE:
-		emitByte(byte(OP_FALSE))
+		emitByte(byte(chunk.OP_FALSE))
 	case T_NIL:
-		emitByte(byte(OP_NIL))
+		emitByte(byte(chunk.OP_NIL))
 	case T_TRUE:
-		emitByte(byte(OP_TRUE))
+		emitByte(byte(chunk.OP_TRUE))
 	default:
 		panic("Invalid token to create 'push literal' opcode.")
 	}
@@ -172,8 +174,8 @@ func grouping() {
 	consume(T_RIGHT_PAREN, "Expect ')' after expression.")
 }
 
-func makeConstant(x Value) byte {
-	b := currentChunk().addConstant(x)
+func makeConstant(x chunk.Value) byte {
+	b := currentChunk().AddConstant(x)
 	if b > math.MaxInt8 {
 		errorAtPrev("Too many constants in one chunk.")
 		return 0
@@ -182,8 +184,8 @@ func makeConstant(x Value) byte {
 	}
 }
 
-func emitConstant(x Value) {
-	emitBytes(byte(OP_CONSTANT), makeConstant(x))
+func emitConstant(x chunk.Value) {
+	emitBytes(byte(chunk.OP_CONSTANT), makeConstant(x))
 }
 
 func number() {
@@ -191,7 +193,7 @@ func number() {
 	if err != nil {
 		panic(fmt.Sprintf("Compiler failed to parse float: %v", err))
 	}
-	emitConstant(NewNumber(Number(x)))
+	emitConstant(chunk.NewNumber(chunk.Number(x)))
 }
 
 func unary() {
@@ -201,9 +203,9 @@ func unary() {
 
 	switch tKind {
 	case T_BANG:
-		emitByte(byte(OP_NOT))
+		emitByte(byte(chunk.OP_NOT))
 	case T_MINUS:
-		emitByte(byte(OP_NEGATE))
+		emitByte(byte(chunk.OP_NEGATE))
 	default:
 		panic("Invalid unary operator token kind.")
 	}
@@ -276,7 +278,7 @@ func expression() {
 	parsePrecedence(PREC_ASSIGNMENT)
 }
 
-func compile(source []uint8, c *Chunk) bool {
+func Compile(source []uint8, c *chunk.Chunk) bool {
 	fmt.Printf("compiling code: %s\n", source)
 	makeRules()
 	_, tokens := scan([]byte(source))

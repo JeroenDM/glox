@@ -1,4 +1,4 @@
-package main
+package chunk
 
 import (
 	"bufio"
@@ -38,7 +38,7 @@ func (chunk *Chunk) Write(code uint8, line int) {
 	chunk.Lines = append(chunk.Lines, line)
 }
 
-func makeChunk() Chunk {
+func MakeChunk() Chunk {
 	const initCapacity = 100
 	return Chunk{
 		make([]uint8, 0, initCapacity),
@@ -55,7 +55,7 @@ func (chunk *Chunk) printSimpleInstruction(label string, offset int) int {
 func (chunk *Chunk) printConstantInstruction(name string, offset int) int {
 	constant := chunk.Code[offset+1]
 	fmt.Printf("%-16s %4d '", name, constant)
-	printValue(chunk.Constants[constant])
+	PrintValue(chunk.Constants[constant])
 	fmt.Printf("'\n")
 	return offset + 2
 }
@@ -115,13 +115,13 @@ func (chunk *Chunk) Disassemble(name string) {
 
 }
 
-func (chunk *Chunk) addConstant(x Value) uint8 {
+func (chunk *Chunk) AddConstant(x Value) uint8 {
 	chunk.Constants = append(chunk.Constants, x)
 	return uint8(len(chunk.Constants)) - 1
 }
 
-func parseByteCode(r io.Reader) (Chunk, error) {
-	chunk := makeChunk()
+func ParseByteCode(r io.Reader) (Chunk, error) {
+	chunk := MakeChunk()
 	scanner := bufio.NewScanner(r)
 	section := ""
 	lineNumber := -1

@@ -1,3 +1,3 @@
-module example/gpy
+module github.com/jeroendm/glox
 
-go 1.19
+go 1.23

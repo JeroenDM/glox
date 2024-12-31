@@ -1,8 +1,10 @@
-package main
+package vm
 
 import (
 	"strings"
 	"testing"
+
+	"github.com/jeroendm/glox/chunk"
 )
 
 func TestByteCodeSmall(t *testing.T) {
@@ -20,7 +22,7 @@ divide
 negate
 return`
 
-	chunk, err := parseByteCode(strings.NewReader(asm))
+	chunk, err := chunk.ParseByteCode(strings.NewReader(asm))
 	if err != nil {
 		t.Fatal(err)
 	}

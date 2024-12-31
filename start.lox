@@ -1,2 +1,1 @@
 !(5 - 4 > 3 * 2 == !nil);
-// !(5 - 4 > 3 * 2 == !nil) // Unexpected error if I remove semicolon.

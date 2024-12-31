@@ -1,13 +1,15 @@
-package main
+package vm
 
 import (
 	"fmt"
 	"os"
+
+	"github.com/jeroendm/glox/chunk"
 )
 
 type InterpretError uint8
 
-type BinaryOp func(Number, Number) Number
+type BinaryOp func(chunk.Number, chunk.Number) chunk.Number
 
 const (
 	INTERPRET_COMPILE_ERROR InterpretError = iota
@@ -25,7 +27,7 @@ func (e InterpretError) Error() string {
 	return "unknown interpret error"
 }
 
-func isFalsey(value Value) bool {
+func isFalsey(value chunk.Value) bool {
 	return value.IsNil() || value.IsBool() && !value.AsBool()
 }
 
@@ -35,31 +37,32 @@ func isFalsey(value Value) bool {
 const STACK_MAX = 255
 
 type VM struct {
-	chunk    *Chunk
+	chunk    *chunk.Chunk
 	ip       int
-	stack    []Value
+	stack    []chunk.Value
 	stackTop uint8
 }
 
 func MakeVM() VM {
-	return VM{nil, 0, make([]Value, STACK_MAX), 0}
+	return VM{nil, 0, make([]chunk.Value, STACK_MAX), 0}
 }
 
-func (vm *VM) InterpretChunk(chunk *Chunk) error {
+func (vm *VM) InterpretChunk(chunk *chunk.Chunk) error {
 	vm.chunk = chunk
 	vm.ip = 0
 	return vm.run()
 }
 
-func (vm *VM) Interpret(source []uint8) error {
-	c := makeChunk()
+func (vm *VM) Interpret(c *chunk.Chunk) error {
+	// c := chunk.MakeChunk()
 
-	hadError := compile(source, &c)
-	if hadError {
-		return INTERPRET_COMPILE_ERROR
-	}
+	// hadError := compile(source, &c)
+	// if hadError {
+	// 	return INTERPRET_COMPILE_ERROR
+	// }
 
-	vm.chunk = &c
+	// vm.chunk = &c
+	vm.chunk = c
 	vm.ip = 0
 	return vm.run()
 }
@@ -68,43 +71,43 @@ func (vm *VM) run() error {
 	for {
 		traceInstruction(vm, vm.ip)
 		var err error
-		switch OpCode(vm.readByte()) {
-		case OP_CONSTANT:
+		switch chunk.OpCode(vm.readByte()) {
+		case chunk.OP_CONSTANT:
 			constant := vm.readConstant()
 			vm.push(constant)
-		case OP_NEGATE:
+		case chunk.OP_NEGATE:
 			if !(vm.peek(0).IsNumber()) {
 				vm.runtimeError("Operand must be a number.")
 				err = INTERPRET_RUNTIME_ERROR
 			} else {
-				vm.push(NewNumber(-vm.pop().AsNumber()))
+				vm.push(chunk.NewNumber(-vm.pop().AsNumber()))
 			}
-		case OP_NIL:
-			vm.push(NewNil())
-		case OP_TRUE:
-			vm.push(NewBool(true))
-		case OP_FALSE:
-			vm.push(NewBool(false))
-		case OP_EQUAL:
+		case chunk.OP_NIL:
+			vm.push(chunk.NewNil())
+		case chunk.OP_TRUE:
+			vm.push(chunk.NewBool(true))
+		case chunk.OP_FALSE:
+			vm.push(chunk.NewBool(false))
+		case chunk.OP_EQUAL:
 			b := vm.pop()
 			a := vm.pop()
-			vm.push(NewBool(valuesEqual(a, b)))
-		case OP_GREATER:
-			vm.binaryBool(NewBool, func(a Number, b Number) bool { return a > b })
-		case OP_LESS:
-			vm.binaryBool(NewBool, func(a Number, b Number) bool { return a < b })
-		case OP_ADD:
-			err = vm.binary(NewNumber, func(a Number, b Number) Number { return a + b })
-		case OP_SUBTRACT:
-			err = vm.binary(NewNumber, func(a Number, b Number) Number { return a - b })
-		case OP_MULTIPLY:
-			err = vm.binary(NewNumber, func(a Number, b Number) Number { return a * b })
-		case OP_DIVIDE:
-			err = vm.binary(NewNumber, func(a Number, b Number) Number { return a / b })
-		case OP_NOT:
-			vm.push(NewBool(isFalsey(vm.pop())))
-		case OP_RETURN:
-			printValue(vm.pop())
+			vm.push(chunk.NewBool(chunk.ValuesEqual(a, b)))
+		case chunk.OP_GREATER:
+			vm.binaryBool(chunk.NewBool, func(a chunk.Number, b chunk.Number) bool { return a > b })
+		case chunk.OP_LESS:
+			vm.binaryBool(chunk.NewBool, func(a chunk.Number, b chunk.Number) bool { return a < b })
+		case chunk.OP_ADD:
+			err = vm.binary(chunk.NewNumber, func(a chunk.Number, b chunk.Number) chunk.Number { return a + b })
+		case chunk.OP_SUBTRACT:
+			err = vm.binary(chunk.NewNumber, func(a chunk.Number, b chunk.Number) chunk.Number { return a - b })
+		case chunk.OP_MULTIPLY:
+			err = vm.binary(chunk.NewNumber, func(a chunk.Number, b chunk.Number) chunk.Number { return a * b })
+		case chunk.OP_DIVIDE:
+			err = vm.binary(chunk.NewNumber, func(a chunk.Number, b chunk.Number) chunk.Number { return a / b })
+		case chunk.OP_NOT:
+			vm.push(chunk.NewBool(isFalsey(vm.pop())))
+		case chunk.OP_RETURN:
+			chunk.PrintValue(vm.pop())
 			fmt.Printf("\n")
 			return nil
 		default:
@@ -123,7 +126,7 @@ func (vm *VM) readByte() uint8 {
 	return vm.chunk.Code[i]
 }
 
-func (vm *VM) readConstant() Value {
+func (vm *VM) readConstant() chunk.Value {
 	value := vm.chunk.Constants[vm.readByte()]
 	return value
 }
@@ -141,7 +144,7 @@ func (vm *VM) runtimeError(format string, a ...any) {
 	vm.resetStack()
 }
 
-func (vm *VM) push(value Value) {
+func (vm *VM) push(value chunk.Value) {
 	if vm.stackTop == STACK_MAX {
 		msg := fmt.Sprintf("Stack overflow! Max stack size (%d) reached.", STACK_MAX)
 		panic(msg)
@@ -150,7 +153,7 @@ func (vm *VM) push(value Value) {
 	vm.stackTop++
 }
 
-func (vm *VM) pop() Value {
+func (vm *VM) pop() chunk.Value {
 	if vm.stackTop == 0 {
 		panic("Cannot pop value from an empty stack.")
 	}
@@ -158,12 +161,12 @@ func (vm *VM) pop() Value {
 	return vm.stack[vm.stackTop]
 }
 
-func (vm *VM) peek(distance uint8) Value {
+func (vm *VM) peek(distance uint8) chunk.Value {
 	return vm.stack[vm.stackTop-distance-1]
 }
 
 // TODO binary op should probably be generic to support multiple value types.
-func (vm *VM) binary(toValue func(Number) Value, op BinaryOp) error {
+func (vm *VM) binary(toValue func(chunk.Number) chunk.Value, op BinaryOp) error {
 	if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
 		vm.runtimeError("Operands must be numbers.")
 		return INTERPRET_RUNTIME_ERROR
@@ -176,7 +179,7 @@ func (vm *VM) binary(toValue func(Number) Value, op BinaryOp) error {
 	return nil
 }
 
-func (vm *VM) binaryBool(toValue func(bool) Value, op func(Number, Number) bool) error {
+func (vm *VM) binaryBool(toValue func(bool) chunk.Value, op func(chunk.Number, chunk.Number) bool) error {
 	if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
 		vm.runtimeError("Operands must be numbers.")
 		return INTERPRET_RUNTIME_ERROR
