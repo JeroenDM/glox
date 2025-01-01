@@ -1,6 +1,9 @@
 package chunk
 
-import "fmt"
+import (
+	"fmt"
+	"unsafe"
+)
 
 type Number float64
 
@@ -14,20 +17,20 @@ const (
 
 type Value struct {
 	kind ValueKind
-	data Number
+	data unsafe.Pointer
 }
 
 func NewBool(value bool) Value {
 	return Value{
 		kind: VAL_BOOL,
-		data: bool2Number(value),
+		data: unsafe.Pointer(&value),
 	}
 }
 
 func NewNumber(value Number) Value {
 	return Value{
 		kind: VAL_NUMBER,
-		data: value,
+		data: unsafe.Pointer(&value),
 	}
 }
 
@@ -39,14 +42,14 @@ func (v Value) AsBool() bool {
 	if !v.IsBool() {
 		panic("Value is not a boolean.")
 	}
-	return number2Bool(v.data)
+	return *(*bool)(v.data)
 }
 
 func (v Value) AsNumber() Number {
 	if !v.IsNumber() {
 		panic("Value is not a number.")
 	}
-	return v.data
+	return *(*Number)(v.data)
 }
 
 func (v Value) IsBool() bool {
@@ -59,22 +62,6 @@ func (v Value) IsNumber() bool {
 
 func (v Value) IsNil() bool {
 	return v.kind == VAL_NIL
-}
-
-func bool2Number(b bool) Number {
-	// The compiler currently only optimizes this form.
-	// https://dev.to/chigbeef_77/bool-int-but-stupid-in-go-3jb3
-	var i Number
-	if b {
-		i = 1.0
-	} else {
-		i = 0.0
-	}
-	return i
-}
-
-func number2Bool(f Number) bool {
-	return !(f == 0.0)
 }
 
 func ValuesEqual(a, b Value) bool {
