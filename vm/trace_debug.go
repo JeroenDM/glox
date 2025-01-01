@@ -3,13 +3,17 @@
 
 package vm
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/jeroendm/glox/chunk"
+)
 
 func traceInstruction(vm *VM, offset int) {
 	fmt.Printf("          ")
 	for _, value := range vm.stack[:vm.stackTop] {
 		fmt.Printf("[ ")
-		printValue(value)
+		chunk.PrintValue(value)
 		fmt.Printf(" ]")
 	}
 	fmt.Printf("\n")
