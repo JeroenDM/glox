@@ -93,9 +93,9 @@ func (vm *VM) run() error {
 			a := vm.pop()
 			vm.push(chunk.NewBool(chunk.ValuesEqual(a, b)))
 		case chunk.OP_GREATER:
-			vm.binaryBool(chunk.NewBool, func(a chunk.Number, b chunk.Number) bool { return a > b })
+			err = vm.binaryBool(chunk.NewBool, func(a chunk.Number, b chunk.Number) bool { return a > b })
 		case chunk.OP_LESS:
-			vm.binaryBool(chunk.NewBool, func(a chunk.Number, b chunk.Number) bool { return a < b })
+			err = vm.binaryBool(chunk.NewBool, func(a chunk.Number, b chunk.Number) bool { return a < b })
 		case chunk.OP_ADD:
 			err = vm.binary(chunk.NewNumber, func(a chunk.Number, b chunk.Number) chunk.Number { return a + b })
 		case chunk.OP_SUBTRACT:
