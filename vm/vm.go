@@ -16,6 +16,18 @@ const (
 	INTERPRET_RUNTIME_ERROR
 )
 
+var (
+	LESS = func(a chunk.Number, b chunk.Number) bool { return a > b }
+	GREATER = func(a chunk.Number, b chunk.Number) bool { return a > b }
+)
+
+var (
+	PLUS = func(a chunk.Number, b chunk.Number) chunk.Number { return a + b }
+	SUBTRACT = func(a chunk.Number, b chunk.Number) chunk.Number { return a - b }
+	MULTIPLY = func(a chunk.Number, b chunk.Number) chunk.Number { return a * b }
+	DIVIDE = func(a chunk.Number, b chunk.Number) chunk.Number { return a / b }
+)
+
 func (e InterpretError) Error() string {
 	switch e {
 	case INTERPRET_COMPILE_ERROR:
@@ -93,17 +105,17 @@ func (vm *VM) run() error {
 			a := vm.pop()
 			vm.push(chunk.NewBool(chunk.ValuesEqual(a, b)))
 		case chunk.OP_GREATER:
-			err = vm.binaryBool(chunk.NewBool, func(a chunk.Number, b chunk.Number) bool { return a > b })
+			err = vm.binaryBool(chunk.NewBool, GREATER)
 		case chunk.OP_LESS:
-			err = vm.binaryBool(chunk.NewBool, func(a chunk.Number, b chunk.Number) bool { return a < b })
+			err = vm.binaryBool(chunk.NewBool, LESS)
 		case chunk.OP_ADD:
-			err = vm.binary(chunk.NewNumber, func(a chunk.Number, b chunk.Number) chunk.Number { return a + b })
+			err = vm.binary(chunk.NewNumber, PLUS)
 		case chunk.OP_SUBTRACT:
-			err = vm.binary(chunk.NewNumber, func(a chunk.Number, b chunk.Number) chunk.Number { return a - b })
+			err = vm.binary(chunk.NewNumber, SUBTRACT)
 		case chunk.OP_MULTIPLY:
-			err = vm.binary(chunk.NewNumber, func(a chunk.Number, b chunk.Number) chunk.Number { return a * b })
+			err = vm.binary(chunk.NewNumber, MULTIPLY)
 		case chunk.OP_DIVIDE:
-			err = vm.binary(chunk.NewNumber, func(a chunk.Number, b chunk.Number) chunk.Number { return a / b })
+			err = vm.binary(chunk.NewNumber, DIVIDE)
 		case chunk.OP_NOT:
 			vm.push(chunk.NewBool(isFalsey(vm.pop())))
 		case chunk.OP_RETURN:
@@ -139,6 +151,8 @@ func (vm *VM) runtimeError(format string, a ...any) {
 	fmt.Fprintf(os.Stderr, format, a...)
 	fmt.Fprintf(os.Stderr, "\n")
 
+	// Minus one because the interpreter advances past and instruction
+	// before executing it.
 	line := vm.chunk.Lines[vm.ip-1]
 	fmt.Fprintf(os.Stderr, "[line %d] in script\n", line)
 	vm.resetStack()
