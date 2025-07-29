@@ -78,7 +78,8 @@ func (v Value) AsGoString() string {
 	if !v.IsString() {
 		panic("Value is not a string.")
 	}
-	return string((*ObjString)(v.data).s)
+	obj_str_ptr := (*ObjString)(v.data)
+	return string(obj_str_ptr.s)
 }
 
 func (v Value) ObjKind() ObjKind {
@@ -129,6 +130,9 @@ func PrintValue(x Value) {
 		fmt.Printf("nil")
 	case VAL_NUMBER:
 		fmt.Printf("%g", x.AsNumber())
+	case VAL_OBJ:
+		// TODO check obj kind.
+		fmt.Printf("%s", x.AsGoString())
 	default:
 		panic("Unknown value type.")
 	}

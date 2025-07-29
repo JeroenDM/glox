@@ -38,3 +38,11 @@ func TestDoublePtr(t *testing.T) {
 	// to the actual object, not to a copy.
 	assert.AssertEqual(t, fmt.Sprintf("%.1f", value1.AsNumber()), "3.0")
 }
+
+func TestCopyString(t *testing.T) {
+	s1 := "hello"
+	sobj := CopyString([]byte(s1))
+	value := NewObj(&sobj.Obj)
+	assert.Assert(t, value.IsString())
+	assert.AssertEqual(t, value.AsGoString(), "hello")
+}

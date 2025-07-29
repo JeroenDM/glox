@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"unsafe"
 
 	"github.com/jeroendm/glox/chunk"
 )
@@ -196,6 +197,11 @@ func number() {
 	emitConstant(chunk.NewNumber(chunk.Number(x)))
 }
 
+func pstring() {
+	obj := chunk.CopyString(p.prev.lexeme)
+	emitConstant(chunk.NewObj((*chunk.Obj)(unsafe.Pointer(&obj))))
+}
+
 func unary() {
 	tKind := p.prev.kind
 
@@ -233,7 +239,7 @@ func makeRules() {
 		T_LESS:          {nil, binary, PREC_COMPARISON},
 		T_LESS_EQUAL:    {nil, binary, PREC_COMPARISON},
 		T_IDENTIFIER:    {nil, nil, PREC_NONE},
-		T_STRING:        {nil, nil, PREC_NONE},
+		T_STRING:        {pstring, nil, PREC_NONE},
 		T_NUMBER:        {number, nil, PREC_NONE},
 		T_AND:           {nil, nil, PREC_NONE},
 		T_CLASS:         {nil, nil, PREC_NONE},
