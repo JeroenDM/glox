@@ -13,6 +13,7 @@ const (
 	VAL_BOOL ValueKind = iota
 	VAL_NIL
 	VAL_NUMBER
+	VAL_OBJ
 )
 
 type Value struct {
@@ -38,6 +39,13 @@ func NewNil() Value {
 	return Value{kind: VAL_NIL}
 }
 
+func NewObj(value *Obj) Value {
+	return Value{
+		kind: VAL_OBJ,
+		data: unsafe.Pointer(value),
+	}
+}
+
 func (v Value) AsBool() bool {
 	if !v.IsBool() {
 		panic("Value is not a boolean.")
@@ -52,6 +60,31 @@ func (v Value) AsNumber() Number {
 	return *(*Number)(v.data)
 }
 
+func (v Value) AsObj() Obj {
+	if !v.IsObj() {
+		panic("Value is not an object.")
+	}
+	return *(*Obj)(v.data)
+}
+
+func (v Value) AsString() ObjString {
+	if !v.IsString() {
+		panic("Value is not a string.")
+	}
+	return *(*ObjString)(v.data)
+}
+
+func (v Value) AsGoString() string {
+	if !v.IsString() {
+		panic("Value is not a string.")
+	}
+	return string((*ObjString)(v.data).s)
+}
+
+func (v Value) ObjKind() ObjKind {
+	return v.AsObj().kind
+}
+
 func (v Value) IsBool() bool {
 	return v.kind == VAL_BOOL
 }
@@ -62,6 +95,14 @@ func (v Value) IsNumber() bool {
 
 func (v Value) IsNil() bool {
 	return v.kind == VAL_NIL
+}
+
+func (v Value) IsObj() bool {
+	return v.kind == VAL_OBJ
+}
+
+func (v Value) IsString() bool {
+	return v.IsObj() && (v.ObjKind() == OBJ_STRING)
 }
 
 func ValuesEqual(a, b Value) bool {
