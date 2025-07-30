@@ -3,6 +3,7 @@ package chunk
 import (
 	"fmt"
 	"testing"
+	"unsafe"
 
 	"github.com/huandu/go-assert"
 )
@@ -13,12 +14,21 @@ func TestValuesEqualSameType(t *testing.T) {
 	assert.AssertEqual(t, ValuesEqual(NewBool(true), NewBool(false)), false)
 	assert.AssertEqual(t, ValuesEqual(NewNumber(3.0), NewNumber(3.0)), true)
 	assert.AssertEqual(t, ValuesEqual(NewNumber(3.0), NewNumber(4.0)), false)
+	assert.AssertEqual(t, ValuesEqual(NewObjString([]byte("hello")), NewObjString([]byte("hello"))), true)
+	assert.AssertEqual(t, ValuesEqual(NewObjString([]byte("a")), NewObjString([]byte("aa"))), false)
+	assert.AssertEqual(t, ValuesEqual(NewObjString([]byte("hello")), NewObjString([]byte("dummy"))), false)
 }
 
 func TestValuesEqualDifferentType(t *testing.T) {
+	s1 := NewObjString([]byte("hello"))
 	assert.AssertEqual(t, ValuesEqual(NewNil(), NewBool(true)), false)
 	assert.AssertEqual(t, ValuesEqual(NewNil(), NewNumber(3.0)), false)
+	assert.AssertEqual(t, ValuesEqual(NewNil(), s1), false)
+
 	assert.AssertEqual(t, ValuesEqual(NewBool(true), NewNumber(4.0)), false)
+	assert.AssertEqual(t, ValuesEqual(NewBool(true), s1), false)
+
+	assert.AssertEqual(t, ValuesEqual(NewNumber(4.0), s1), false)
 }
 
 func TestObjValue(t *testing.T) {
@@ -40,9 +50,21 @@ func TestDoublePtr(t *testing.T) {
 }
 
 func TestCopyString(t *testing.T) {
-	s1 := "hello"
-	sobj := CopyString([]byte(s1))
-	value := NewObj(&sobj.Obj)
+	s1 := []byte("hello")
+	obj_str := CopyString(s1)
+	value := NewObj((*Obj)(unsafe.Pointer(&obj_str)))
 	assert.Assert(t, value.IsString())
 	assert.AssertEqual(t, value.AsGoString(), "hello")
+	s1[0] = 'T'
+	assert.AssertEqual(t, value.AsGoString(), "hello")
+}
+
+func TestTakeString(t *testing.T) {
+	s1 := []byte("hello")
+	obj_str := TakeString(s1)
+	value := NewObj((*Obj)(unsafe.Pointer(&obj_str)))
+	assert.Assert(t, value.IsString())
+	assert.AssertEqual(t, value.AsGoString(), "hello")
+	s1[0] = 'T'
+	assert.AssertEqual(t, value.AsGoString(), "Tello")
 }

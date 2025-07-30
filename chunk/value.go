@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"bytes"
 	"fmt"
 	"unsafe"
 )
@@ -46,6 +47,11 @@ func NewObj(value *Obj) Value {
 	}
 }
 
+func NewObjString(s []byte) Value {
+	obj_str := CopyString(s)
+	return NewObj((*Obj)(unsafe.Pointer(&obj_str)))
+}
+
 func (v Value) AsBool() bool {
 	if !v.IsBool() {
 		panic("Value is not a boolean.")
@@ -67,11 +73,11 @@ func (v Value) AsObj() Obj {
 	return *(*Obj)(v.data)
 }
 
-func (v Value) AsString() ObjString {
+func (v Value) AsString() *ObjString {
 	if !v.IsString() {
 		panic("Value is not a string.")
 	}
-	return *(*ObjString)(v.data)
+	return (*ObjString)(v.data)
 }
 
 func (v Value) AsGoString() string {
@@ -79,7 +85,7 @@ func (v Value) AsGoString() string {
 		panic("Value is not a string.")
 	}
 	obj_str_ptr := (*ObjString)(v.data)
-	return string(obj_str_ptr.s)
+	return string(obj_str_ptr.Bytes)
 }
 
 func (v Value) ObjKind() ObjKind {
@@ -117,6 +123,10 @@ func ValuesEqual(a, b Value) bool {
 		return true
 	case VAL_NUMBER:
 		return a.AsNumber() == b.AsNumber()
+	case VAL_OBJ:
+		s1 := a.AsString()
+		s2 := b.AsString()
+		return s1.Length == s2.Length && bytes.Equal(s1.Bytes, s2.Bytes)
 	default:
 		panic("Should be unreachable (valuesEqual).")
 	}

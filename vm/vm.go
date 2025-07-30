@@ -3,6 +3,7 @@ package vm
 import (
 	"fmt"
 	"os"
+	"unsafe"
 
 	"github.com/jeroendm/glox/chunk"
 )
@@ -17,15 +18,15 @@ const (
 )
 
 var (
-	LESS = func(a chunk.Number, b chunk.Number) bool { return a > b }
+	LESS    = func(a chunk.Number, b chunk.Number) bool { return a > b }
 	GREATER = func(a chunk.Number, b chunk.Number) bool { return a > b }
 )
 
 var (
-	PLUS = func(a chunk.Number, b chunk.Number) chunk.Number { return a + b }
+	PLUS     = func(a chunk.Number, b chunk.Number) chunk.Number { return a + b }
 	SUBTRACT = func(a chunk.Number, b chunk.Number) chunk.Number { return a - b }
 	MULTIPLY = func(a chunk.Number, b chunk.Number) chunk.Number { return a * b }
-	DIVIDE = func(a chunk.Number, b chunk.Number) chunk.Number { return a / b }
+	DIVIDE   = func(a chunk.Number, b chunk.Number) chunk.Number { return a / b }
 )
 
 func (e InterpretError) Error() string {
@@ -109,7 +110,11 @@ func (vm *VM) run() error {
 		case chunk.OP_LESS:
 			err = vm.binaryBool(chunk.NewBool, LESS)
 		case chunk.OP_ADD:
-			err = vm.binary(chunk.NewNumber, PLUS)
+			if vm.peek(0).IsString() || vm.peek(1).IsString() {
+				err = vm.concatenate()
+			} else {
+				err = vm.binary(chunk.NewNumber, PLUS)
+			}
 		case chunk.OP_SUBTRACT:
 			err = vm.binary(chunk.NewNumber, SUBTRACT)
 		case chunk.OP_MULTIPLY:
@@ -203,5 +208,19 @@ func (vm *VM) binaryBool(toValue func(bool) chunk.Value, op func(chunk.Number, c
 	a := vm.pop().AsNumber()
 	vm.push(toValue(op(a, b)))
 
+	return nil
+}
+
+func (vm *VM) concatenate() error {
+	// Order of pops is important!
+	b := vm.pop().AsString()
+	a := vm.pop().AsString()
+	length := a.Length + b.Length
+	a_b := make([]byte, length)
+	copy(a_b[:a.Length], a.Bytes)
+	copy(a_b[a.Length:], b.Bytes)
+	obj_str := chunk.TakeString(a_b)
+	obj := chunk.NewObj((*chunk.Obj)(unsafe.Pointer(&obj_str)))
+	vm.push(obj)
 	return nil
 }

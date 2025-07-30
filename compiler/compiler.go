@@ -198,7 +198,8 @@ func number() {
 }
 
 func pstring() {
-	obj := chunk.CopyString(p.prev.lexeme)
+	n := len(p.prev.lexeme)
+	obj := chunk.CopyString(p.prev.lexeme[1 : n-1])
 	emitConstant(chunk.NewObj((*chunk.Obj)(unsafe.Pointer(&obj))))
 }
 

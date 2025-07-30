@@ -12,8 +12,8 @@ type Obj struct {
 
 type ObjString struct {
 	Obj
-	length int
-	s      []byte
+	Length int
+	Bytes  []byte
 }
 
 func CopyString(s []byte) ObjString {
@@ -22,7 +22,16 @@ func CopyString(s []byte) ObjString {
 	copy(dest, s)
 	return ObjString{
 		Obj:    Obj{kind: OBJ_STRING},
-		length: len(dest),
-		s:      dest,
+		Length: len(dest),
+		Bytes:  dest,
+	}
+}
+
+func TakeString(s []byte) ObjString {
+	// TODO: or do we want null-terminated []byte arrays?
+	return ObjString{
+		Obj:    Obj{kind: OBJ_STRING},
+		Length: len(s),
+		Bytes:  s,
 	}
 }
